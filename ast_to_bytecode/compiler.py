@@ -8,6 +8,7 @@ from code_to_ast.ast_nodes import (
     Assign,
     BinOp,
     BoolValue,
+    CharValue,
     Call,
     Expr,
     ExprStmt,
@@ -143,7 +144,10 @@ class Compiler:
                 fn_compiler.compile_stmt(body_stmt)
             fn_compiler.emit("PUSH", None)
             fn_compiler.emit("RET")
-            self.functions[stmt.name] = FunctionInfo(params=stmt.params, instructions=fn_compiler.instructions)
+            self.functions[stmt.name] = FunctionInfo(
+                params=[param.name for param in stmt.params],
+                instructions=fn_compiler.instructions
+            )
             return
 
         if isinstance(stmt, TryCatch):
@@ -195,6 +199,10 @@ class Compiler:
             return
 
         if isinstance(expr, StringValue):
+            self.emit("PUSH", expr.value)
+            return
+
+        if isinstance(expr, CharValue):
             self.emit("PUSH", expr.value)
             return
 

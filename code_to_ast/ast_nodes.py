@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import enum
 from typing import Any
 
 
@@ -17,9 +18,26 @@ class Expr:
     pass
 
 
+class TypeType(enum.Enum):
+    INT = "int"
+    FLOAT = "float"
+    BOOL = "bool"
+    STRING = "string"
+    CHAR = "char"
+    VOID = "void"
+
+
+@dataclass(frozen=True)
+class Type:
+    base: TypeType
+    # For arrays, we can have dimensions like [10][20], which would be represented as [10, 20]
+    array_dims: list[int] | None = None
+
+
 @dataclass(frozen=True)
 class VarDecl(Stmt):
     name: str
+    type: Type
     value: Expr
 
 
@@ -61,9 +79,16 @@ class Return(Stmt):
 
 
 @dataclass(frozen=True)
+class FunctionParam:
+    name: str
+    type: Type
+
+
+@dataclass(frozen=True)
 class FunctionDef(Stmt):
     name: str
-    params: list[str]
+    params: list[FunctionParam]
+    return_type: Type
     body: list[Stmt]
 
 
@@ -103,6 +128,11 @@ class BoolValue(Expr):
 
 @dataclass(frozen=True)
 class StringValue(Expr):
+    value: str
+
+
+@dataclass(frozen=True)
+class CharValue(Expr):
     value: str
 
 

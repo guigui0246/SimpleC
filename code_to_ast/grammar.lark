@@ -1,36 +1,41 @@
 start: program
 
-program: statement*
+program: _NL* (program_statement _NL*)*
 
-type: "int" | "bool" | "string" | "double" | "float" | "char" | "void"
+program_statement: simple_statement stmt_end               -> unwrap_statement
+                 | compound_statement                      -> unwrap_statement
 
-statement: type NAME "=" expr ";"                                                                     -> var_decl
-         | NAME "=" expr ";"                                                                          -> assign
-         | NAME "[" expr "]" "=" expr ";"                                                             -> array_assign
-         | "print" "(" expr ")" ";"                                                                   -> print_stmt
-         | "if" "(" expr ")" block elif_clause* else_clause?                                          -> if_stmt
-         | "while" "(" expr ")" block                                                                 -> while_stmt
-         | "for" "(" for_init_clause ")" "(" for_update_clause ")" "(" for_condition_clause ")" block -> for_stmt
-         | "fun" NAME "(" params? ")" block                                                           -> fun_def
-         | "return" expr ";"                                                                          -> return_stmt
-         | "try" block "catch" "(" NAME ")" block                                                     -> try_catch_stmt
-         | expr ";"                                                                                   -> expr_stmt
+declare_statement: type NAME "=" expr                      -> var_decl
+                 | assignment                              -> assign
 
-for_init: type NAME "=" expr                               -> for_var_decl
-        | NAME "=" expr                                    -> for_assign
+simple_statement: declare_statement                        -> unwrap_statement
+                | "print" "(" expr ")"                     -> print_stmt
+                | "return" expr                            -> return_stmt
+                | expr                                     -> expr_stmt
 
-for_init_clause: for_init?
-for_condition_clause: expr?
-for_update_clause: for_update?
+compound_statement: "if" "(" expr ")" block ("elif" "(" expr ")" block)* ("else" block)?        -> if_stmt
+                  | "while" "(" expr ")" block                                                  -> while_stmt
+                  | "for" "(" declare_statement? ")" "(" assignment? ")" "(" expr ")" block     -> for_stmt
+                  | "fun" NAME "(" params? ")" type block                                            -> fun_def
+                  | "try" block "catch" "(" NAME ")" block                                      -> try_catch_stmt
 
-for_update: NAME "=" expr                                  -> for_assign
+statement: simple_statement | compound_statement           -> unwrap_statement
 
-params: NAME ("," NAME)*
+stmt_end: ";" _NL*                                         -> drop
+        | _NL+                                             -> drop
 
-elif_clause: "elif" "(" expr ")" block
-else_clause: "else" block
+lvalue: NAME ("[" expr "]")*
+assignment: lvalue "=" expr
 
-block: "{" statement* "}"
+params: type NAME ("," type NAME)*
+
+block: "{" _NL+ block_statement* "}"
+
+block_statement: simple_statement block_stmt_end           -> unwrap_statement
+               | compound_statement _NL+                   -> unwrap_statement
+
+block_stmt_end: ";" _NL+                                   -> drop
+              | _NL+                                       -> drop
 
 ?expr: logical_or
 
@@ -47,29 +52,38 @@ block: "{" statement* "}"
 ?unary: UNARY_OP unary -> unary_op
       | atom
 
+CHAR: /'([^'\\]|\\.)'/
+
+TYPE_INT: "int"
+TYPE_BOOL: "bool"
+TYPE_STRING: "string"
+TYPE_DOUBLE: "double"
+TYPE_FLOAT: "float"
+TYPE_CHAR: "char"
+TYPE_VOID: "void"
+base_type: TYPE_INT                                        -> unwrap_type
+         | TYPE_BOOL                                       -> unwrap_type
+         | TYPE_STRING                                     -> unwrap_type
+         | TYPE_DOUBLE                                     -> unwrap_type
+         | TYPE_FLOAT                                      -> unwrap_type
+         | TYPE_CHAR                                       -> unwrap_type
+         | TYPE_VOID                                       -> unwrap_type
+type: base_type ("[" expr? "]")*                           -> type_parse
+
 ?atom: postfix
      | NUMBER -> number
      | FLOAT -> float_number
      | BOOL -> bool_value
      | STRING -> string_value
-     | "void" -> void_value
+     | CHAR -> char_value
      | NAME -> var
      | array
      | "(" expr ")"
 
-?postfix: NAME "(" args? ")"                                               -> call
-      | atom_base "[" expr "]"                                             -> index_access
+?postfix: NAME "(" args? ")"                               -> call
+        | atom "[" expr "]"                                -> index_access
 
-?atom_base: NUMBER -> number
-       | FLOAT -> float_number
-       | BOOL -> bool_value
-       | STRING -> string_value
-       | "void" -> void_value
-       | NAME -> var
-       | array
-       | "(" expr ")"
-
-array: "[" [expr ("," expr)*] "]"                                          -> array_literal
+array: "[" [expr ("," expr)*] "]"                          -> array_literal
 
 args: expr ("," expr)*
 
@@ -88,8 +102,9 @@ BOOL: "true" | "false" | "True" | "False"
 %import common.SIGNED_FLOAT -> FLOAT
 %import common.INT -> NUMBER
 %import common.ESCAPED_STRING -> STRING
-%import common.WS
+%import common.NEWLINE -> _NL
+%import common.WS_INLINE
 
-%ignore WS
+%ignore WS_INLINE
 %ignore /##[^\n]*/
 %ignore /#-[\s\S]*?-#/

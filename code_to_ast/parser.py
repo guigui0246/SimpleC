@@ -13,11 +13,13 @@ from .ast_nodes import (
     BinOp,
     BoolValue,
     Call,
+    CharValue,
     Expr,
     ExprStmt,
     FloatNumber,
     For,
     FunctionDef,
+    FunctionParam,
     If,
     IndexAccess,
     Number,
@@ -27,12 +29,39 @@ from .ast_nodes import (
     Stmt,
     StringValue,
     TryCatch,
+    Type,
+    TypeType,
     UnaryOp,
     Var,
     VarDecl,
     VoidValue,
     While,
 )
+
+
+def infer_type_from_expr(expr: Expr) -> Type:
+    print(f"Infer type from expression: {expr!r}")
+    if isinstance(expr, Number):
+        return Type(base=TypeType.INT, array_dims=None)
+    if isinstance(expr, FloatNumber):
+        return Type(base=TypeType.FLOAT, array_dims=None)
+    if isinstance(expr, BoolValue):
+        return Type(base=TypeType.BOOL, array_dims=None)
+    if isinstance(expr, StringValue):
+        return Type(base=TypeType.STRING, array_dims=None)
+    if isinstance(expr, CharValue):
+        return Type(base=TypeType.CHAR, array_dims=None)
+    if isinstance(expr, VoidValue):
+        return Type(base=TypeType.VOID, array_dims=None)
+    if isinstance(expr, ArrayLiteral):
+        if not expr.values:
+            raise ValueError("Cannot infer type from empty array literal")
+        elem_types: list[Type] = [infer_type_from_expr(val) for val in expr.values]
+        if not all(elem_type == elem_types[0] for elem_type in elem_types):
+            raise ValueError("All elements in array literal must have the same type")
+        return Type(base=elem_types[0].base, array_dims=[len(expr.values)] + (elem_types[0].array_dims or []))
+
+    raise ValueError(f"Cannot infer type from expression: {expr!r}")
 
 
 class ToAst(Transformer[Any, Any]):
@@ -46,18 +75,22 @@ class ToAst(Transformer[Any, Any]):
         statements: list[Stmt] = [item for item in items if isinstance(item, Stmt)]
         return Program(statements=statements)
 
+    def unwrap_statement(self, items: list[Any]) -> Stmt:
+        return items[0]
+
+    def drop(self, items: list[Any]) -> None:
+        return None
+
     def block(self, items: list[Any]) -> list[Stmt]:
         return [item for item in items if isinstance(item, Stmt)]
 
-    def type(self, items: list[Any]) -> None:
-        return None
-
     def var_decl(self, items: list[Any]) -> VarDecl:
         if len(items) == 3:
-            _, name_token, expr = items
+            type, name_token, expr = items
         else:
             name_token, expr = items
-        return VarDecl(name=str(name_token), value=expr)
+            type = infer_type_from_expr(expr)
+        return VarDecl(name=str(name_token), type=type, value=expr)
 
     def assign(self, items: list[Any]) -> Assign:
         name_token, expr = items
@@ -100,45 +133,65 @@ class ToAst(Transformer[Any, Any]):
         condition, body = items
         return While(condition=condition, body=body)
 
-    def for_var_decl(self, items: list[Any]) -> VarDecl:
-        if len(items) == 3:
-            _, name_token, expr = items
-        else:
-            name_token, expr = items
-        return VarDecl(name=str(name_token), value=expr)
-
-    def for_assign(self, items: list[Any]) -> Assign:
-        name_token, expr = items
-        return Assign(name=str(name_token), value=expr)
-
-    def for_init_clause(self, items: list[Any]) -> Stmt | None:
-        return items[0] if items else None
-
-    def for_condition_clause(self, items: list[Any]) -> Expr | None:
-        return items[0] if items else None
-
-    def for_update_clause(self, items: list[Any]) -> Stmt | None:
-        return items[0] if items else None
-
     def for_stmt(self, items: list[Any]) -> For:
         init, update, condition, body = items
         return For(init=init, update=update, condition=condition, body=body)
 
-    def params(self, items: list[Any]) -> list[str]:
-        return [str(item) for item in items]
+    def TYPE_INT(self, items: list[Any]) -> TypeType:
+        return TypeType.INT
+
+    def TYPE_FLOAT(self, items: list[Any]) -> TypeType:
+        return TypeType.FLOAT
+
+    def TYPE_BOOL(self, items: list[Any]) -> TypeType:
+        return TypeType.BOOL
+
+    def TYPE_STRING(self, items: list[Any]) -> TypeType:
+        return TypeType.STRING
+
+    def TYPE_CHAR(self, items: list[Any]) -> TypeType:
+        return TypeType.CHAR
+
+    def TYPE_VOID(self, items: list[Any]) -> TypeType:
+        return TypeType.VOID
+
+    def unwrap_type(self, items: list[Any]) -> TypeType:
+        return items[0]
+
+    def type_parse(self, items: list[Any]) -> Type:
+        base_type_token = items[0]
+        array_dims: list[int] = []
+        for item in items[1:]:
+            if isinstance(item, Token) and item.type == "NUMBER":
+                array_dims.append(int(item))
+        return Type(base=base_type_token, array_dims=array_dims or None)
 
     def fun_def(self, items: list[Any]) -> FunctionDef:
         name_token = items[0]
-        params: list[str] = []
+        params: list[FunctionParam] = []
+        return_type: Type = items[2] if len(items) == 4 else items[1]
         body: list[Stmt] = []
 
-        if len(items) == 2:
-            body = items[1]
-        elif len(items) == 3:
-            params = items[1]
+        if len(items) == 3:
             body = items[2]
+        elif len(items) == 4:
+            params = items[1]
+            body = items[3]
 
-        return FunctionDef(name=str(name_token), params=params, body=body)
+        return FunctionDef(name=str(name_token), params=params, return_type=return_type, body=body)
+
+    def params(self, items: list[Any]) -> list[FunctionParam]:
+        params: list[FunctionParam] = []
+        assert len(items) % 2 == 0, "Expected even number of items in params"
+        for i in range(0, len(items), 2):
+            type_item = items[i]
+            name_item = items[i + 1]
+            if not isinstance(type_item, Type):
+                raise TypeError(f"Expected Type for parameter, got: {type(type_item).__name__}")
+            if not isinstance(name_item, Token):
+                raise TypeError(f"Expected Token for parameter name, got: {type(name_item).__name__}")
+            params.append(FunctionParam(name=str(name_item), type=type_item))
+        return params
 
     def return_stmt(self, items: list[Any]) -> Return:
         (value,) = items
@@ -168,6 +221,12 @@ class ToAst(Transformer[Any, Any]):
     def string_value(self, items: list[Any]) -> StringValue:
         (token,) = items
         return StringValue(value=ast.literal_eval(str(token)))
+
+    def char_value(self, items: list[Any]) -> CharValue:
+        (char,) = items
+        value = ast.literal_eval(str(char))
+        assert isinstance(value, str) and len(value) == 1, "Expected single-character literal"
+        return CharValue(value=value)
 
     def void_value(self, _items: list[Any]) -> VoidValue:
         return VoidValue()
