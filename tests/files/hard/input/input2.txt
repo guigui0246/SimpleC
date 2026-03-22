@@ -1,0 +1,11 @@
+fun add(int a, int b) int {
+    return a + b
+}
+fun multiply(int a, int b) int {
+    return a * b
+}
+
+int x = 3
+int y = 4
+int z = add(x, y) * multiply(x, y)  ## (3 + 4) * (3 * 4) = 7 * 12 = 84
+print(z)

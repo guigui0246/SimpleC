@@ -1,0 +1,4 @@
+## Splits a list into two parts
+fun split(void[0] list, int index) void[0][2] {
+    return [list[...index], list[index...]]
+}

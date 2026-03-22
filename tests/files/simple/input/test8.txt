@@ -1,0 +1,9 @@
+## Comments
+
+## Un commentaire simple
+#- Un commentaire
+sur plusieurs lignes
+avec du code commenté comme :
+int temp = 999 -#
+int k = 1000
+print(k)

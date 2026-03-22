@@ -1,0 +1,7 @@
+## Finds the length of a list
+fun length(void[0] list) int {
+    for (int len = 0) (s != "") (len = len + 1) {
+        list = list[1...]
+    }
+    return len
+}

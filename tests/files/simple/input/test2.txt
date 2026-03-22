@@ -1,0 +1,8 @@
+## Function Condition
+fun division(int a, int b) double {
+    if (b == 0) {
+        return -1.0  ## Retour si div by 0
+    }
+    return a / b
+}
+print(division(4, 2))

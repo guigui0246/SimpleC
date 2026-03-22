@@ -1,0 +1,264 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+from ast_to_bytecode.instructions import Bytecode, FunctionInfo, Instruction
+
+
+class VmRuntimeError(Exception):
+    pass
+
+
+@dataclass
+class ReturnSignal:
+    value: Any
+
+
+class VirtualMachine:
+    def __init__(self) -> None:
+        self.stack: list[Any] = []
+        self.variables: dict[str, Any] = {}
+        self.output: list[Any] = []
+        self.functions: dict[str, FunctionInfo] = {}
+
+    def run(self, bytecode: Bytecode) -> list[Any]:
+        self.functions = bytecode.functions
+        self._execute_instructions(bytecode.instructions, local_vars=None)
+        return self.output
+
+    def _execute_instructions(
+        self, instructions: list[Instruction], local_vars: dict[str, Any] | None
+    ) -> ReturnSignal | None:
+        ip = 0
+
+        while ip < len(instructions):
+            instr = instructions[ip]
+            op = instr.op
+            arg = instr.arg
+
+            if op == "HALT":
+                break
+
+            if op == "PUSH":
+                self.stack.append(arg)
+                ip += 1
+                continue
+
+            if op == "LOAD":
+                name = str(arg)
+                if local_vars is not None and name in local_vars:
+                    self.stack.append(local_vars[name])
+                elif name in self.variables:
+                    self.stack.append(self.variables[name])
+                else:
+                    raise VmRuntimeError(f"Undefined variable: {name}")
+                ip += 1
+                continue
+
+            if op == "STORE":
+                name = str(arg)
+                value = self.stack.pop()
+                if local_vars is not None:
+                    local_vars[name] = value
+                else:
+                    self.variables[name] = value
+                ip += 1
+                continue
+
+            if op == "POP":
+                if self.stack:
+                    self.stack.pop()
+                ip += 1
+                continue
+
+            if op == "PRINT":
+                value = self.stack.pop()
+                print(value)
+                self.output.append(value)
+                ip += 1
+                continue
+
+            if op == "NEG":
+                self.stack.append(-self.stack.pop())
+                ip += 1
+                continue
+
+            if op == "NOT":
+                value = self.stack.pop()
+                self.stack.append(False if self._truthy(value) else True)
+                ip += 1
+                continue
+
+            if op in {
+                "ADD",
+                "SUB",
+                "MUL",
+                "DIV",
+                "MOD",
+                "POW",
+                "EQ",
+                "NE",
+                "LT",
+                "LE",
+                "GT",
+                "GE",
+                "AND",
+                "OR",
+                "XOR",
+            }:
+                right = self.stack.pop()
+                left = self.stack.pop()
+                self.stack.append(self._binary_op(op, left, right))
+                ip += 1
+                continue
+
+            if op == "MAKE_LIST":
+                count = int(arg)
+                if count < 0:
+                    raise VmRuntimeError("Negative list size")
+                items = self.stack[-count:] if count > 0 else []
+                if count > 0:
+                    del self.stack[-count:]
+                self.stack.append(items)
+                ip += 1
+                continue
+
+            if op == "GET_INDEX":
+                index = self.stack.pop()
+                target = self.stack.pop()
+                try:
+                    self.stack.append(target[int(index)])
+                except Exception as exc:
+                    raise VmRuntimeError(f"Invalid index access: {exc}") from exc
+                ip += 1
+                continue
+
+            if op == "SET_INDEX":
+                value = self.stack.pop()
+                index = self.stack.pop()
+                target = self.stack.pop()
+                if not isinstance(target, list):
+                    raise VmRuntimeError("SET_INDEX requires a list target")
+                idx = int(index)
+                if idx < 0 or idx >= len(target):
+                    raise VmRuntimeError("Index out of bounds")
+                target[idx] = value
+                self.stack.append(target)
+                ip += 1
+                continue
+
+            if op == "CALL":
+                fn_name = str(arg["name"])
+                argc = int(arg["argc"])
+                args = [self.stack.pop() for _ in range(argc)][::-1]
+                self.stack.append(self._call_function(fn_name, args))
+                ip += 1
+                continue
+
+            if op == "RET":
+                value = self.stack.pop() if self.stack else None
+                return ReturnSignal(value=value)
+
+            if op == "TRY":
+                error_name = str(arg["error_name"])
+                try_instructions = arg["try_instructions"]
+                catch_instructions = arg["catch_instructions"]
+
+                try_code = [self._to_instruction(i) for i in try_instructions]
+                catch_code = [self._to_instruction(i) for i in catch_instructions]
+
+                try:
+                    signal = self._execute_instructions(try_code, local_vars=local_vars)
+                    self.stack.append(signal.value if signal is not None else None)
+                except VmRuntimeError as exc:
+                    if local_vars is not None:
+                        local_vars[error_name] = str(exc)
+                    else:
+                        self.variables[error_name] = str(exc)
+                    signal = self._execute_instructions(catch_code, local_vars=local_vars)
+                    self.stack.append(signal.value if signal is not None else None)
+
+                ip += 1
+                continue
+
+            if op == "JUMP":
+                ip = int(arg)
+                continue
+
+            if op == "JUMP_IF_FALSE":
+                value = self.stack.pop()
+                if not self._truthy(value):
+                    ip = int(arg)
+                else:
+                    ip += 1
+                continue
+
+            raise ValueError(f"Unknown opcode: {op}")
+
+        return None
+
+    def _call_function(self, name: str, args: list[Any]) -> Any:
+        if name == "print":
+            for item in args:
+                print(item)
+                self.output.append(item)
+            return None
+
+        info = self.functions.get(name)
+        if info is None:
+            raise VmRuntimeError(f"Undefined function: {name}")
+        if len(args) != len(info.params):
+            raise VmRuntimeError(
+                f"Wrong number of arguments for {name}: expected {len(info.params)}, got {len(args)}"
+            )
+
+        local_vars = dict(zip(info.params, args, strict=True))
+        signal = self._execute_instructions(info.instructions, local_vars=local_vars)
+        return signal.value if signal is not None else None
+
+    @staticmethod
+    def _to_instruction(item: dict[str, Any]) -> Instruction:
+        return Instruction(op=str(item["op"]), arg=item.get("arg"))
+
+    @staticmethod
+    def _truthy(value: Any) -> bool:
+        return bool(value)
+
+    @staticmethod
+    def _binary_op(op: str, left: Any, right: Any) -> Any:
+        if op == "ADD":
+            return left + right
+        if op == "SUB":
+            return left - right
+        if op == "MUL":
+            return left * right
+        if op == "DIV":
+            if right == 0:
+                raise VmRuntimeError("Division by zero")
+            return left / right
+        if op == "MOD":
+            if right == 0:
+                raise VmRuntimeError("Modulo by zero")
+            return left % right
+        if op == "POW":
+            return left**right
+        if op == "EQ":
+            return left == right
+        if op == "NE":
+            return left != right
+        if op == "LT":
+            return left < right
+        if op == "LE":
+            return left <= right
+        if op == "GT":
+            return left > right
+        if op == "GE":
+            return left >= right
+        if op == "AND":
+            return bool(left) and bool(right)
+        if op == "OR":
+            return bool(left) or bool(right)
+        if op == "XOR":
+            return bool(left) ^ bool(right)
+        raise ValueError(f"Unknown binary opcode: {op}")

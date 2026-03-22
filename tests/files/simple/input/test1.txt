@@ -1,0 +1,10 @@
+## Print Variables
+int x = 42
+char y = 'Z'
+double z = 3.14
+int[5] tab = [1, 2, 3, 4, 5]
+
+print(x)
+print(y)
+print(z)
+print(tab)

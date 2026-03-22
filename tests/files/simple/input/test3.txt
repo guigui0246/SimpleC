@@ -1,0 +1,17 @@
+## Conditions et Operateurs
+int a = 10
+if (a < 5) {
+    print("if ")
+    a = a + 1
+} elif (a == 10) {
+    print("elif ")
+    if (a % 2 == 0) {
+        a = a * 2
+    } else {
+        a = a ^ 2
+    }
+} else {
+    print("else ")
+    a = a - 3
+}
+print(a)

@@ -1,0 +1,36 @@
+#-
+WARNING: This files needs length and find to be defined or imported
+-#
+
+## This creates a set from a list
+fun set(void[0] list) void[0] {
+    void[0] new_list = []
+    for (int index = 0) (index < length(new_list)) (index = index + 1) {
+        elem = list[index]
+        if (find(new_list, elem) == -1) {
+            new_list = new_list + [elem]
+        }
+    }
+    return new_list
+}
+
+## This adds an element to the set
+fun add(void[0] list, void elem) void[0] {
+    if (find(list, elem) == -1) {
+        list = list + [elem]
+    }
+    return list
+}
+
+## This removes an element from the set
+fun remove(void[0] list, void elem) void[0] {
+    int index = find(list, elem)
+    if (index != -1) {
+        int len = length(list)
+        while (index < len) {
+            list[index] = list[index + 1]
+            index = index + 1
+        }
+    }
+    return list
+}

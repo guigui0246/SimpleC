@@ -1,0 +1,89 @@
+start: program
+
+program: statement*
+
+statement: type NAME "=" expr ";"                                          -> var_decl
+         | NAME "=" expr ";"                                               -> assign
+         | NAME "[" expr "]" "=" expr ";"                                  -> array_assign
+         | "print" "(" expr ")" ";"                                        -> print_stmt
+         | "if" "(" expr ")" block elif_clause* else_clause?               -> if_stmt
+         | "while" "(" expr ")" block                                      -> while_stmt
+         | "for" "(" for_init? ")" "(" for_update? ")" "(" expr? ")" block -> for_stmt
+         | "fun" NAME "(" params? ")" block                                -> fun_def
+         | "return" expr ";"                                               -> return_stmt
+         | "try" block "catch" "(" NAME ")" block                          -> try_catch_stmt
+         | expr ";"                                                        -> expr_stmt
+
+for_init: type NAME "=" expr                                               -> for_var_decl
+        | NAME "=" expr                                                    -> for_assign
+
+for_update: NAME "=" expr                                                  -> for_assign
+
+params: NAME ("," NAME)*
+
+elif_clause: "elif" "(" expr ")" block
+else_clause: "else" block
+
+block: "{" statement* "}"
+
+?expr: logical_or
+
+?logical_or: logical_xor (OR_OP logical_xor)*
+?logical_xor: logical_and (XOR_OP logical_and)*
+?logical_and: equality (AND_OP equality)*
+
+?equality: comparison (EQUALITY_OP comparison)*
+?comparison: term (COMPARE_OP term)*
+?term: factor (ADD_OP factor)*
+?factor: power (MUL_OP power)*
+?power: unary (POW_OP unary)*
+
+?unary: UNARY_OP unary -> unary_op
+      | atom
+
+?atom: postfix
+     | NUMBER -> number
+     | FLOAT -> float_number
+     | BOOL -> bool_value
+     | STRING -> string_value
+     | "void" -> void_value
+     | NAME -> var
+     | array
+     | "(" expr ")"
+
+?postfix: NAME "(" args? ")"                                               -> call
+      | atom_base "[" expr "]"                                             -> index_access
+
+?atom_base: NUMBER -> number
+       | FLOAT -> float_number
+       | BOOL -> bool_value
+       | STRING -> string_value
+       | "void" -> void_value
+       | NAME -> var
+       | array
+       | "(" expr ")"
+
+array: "[" [expr ("," expr)*] "]"                                          -> array_literal
+
+args: expr ("," expr)*
+
+EQUALITY_OP: "==" | "!="
+COMPARE_OP: ">" | ">=" | "<" | "<="
+ADD_OP: "+" | "-"
+MUL_OP: "*" | "/" | "%"
+POW_OP: "^"
+AND_OP: "and"
+OR_OP: "or"
+XOR_OP: "xor"
+UNARY_OP: "-" | "not"
+BOOL: "true" | "false" | "True" | "False"
+
+%import common.CNAME -> NAME
+%import common.SIGNED_FLOAT -> FLOAT
+%import common.INT -> NUMBER
+%import common.ESCAPED_STRING -> STRING
+%import common.WS
+
+%ignore WS
+%ignore /##[^\n]*/
+%ignore /#-[\s\S]*?-#/

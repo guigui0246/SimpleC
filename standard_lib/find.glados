@@ -1,0 +1,14 @@
+#-
+WARNING: This files needs length to be defined or imported
+-#
+
+## Finds the index of an element in a list
+fun find(void[0] list, void elem) int {
+    len = length(list)
+    for (int index = 0) (index < len) (index = index + 1) {
+        if (list[index] == elem) {
+            return elem
+        }
+    }
+    return -1
+}

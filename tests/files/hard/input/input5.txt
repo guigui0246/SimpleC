@@ -1,0 +1,6 @@
+fun square(int x) int {
+    return x * x
+}
+for (int i = 1) (i <= 5) (i = i + 1) {
+    print(square(i))  ## Carrés de 1 à 5 : 1, 4, 9, 16, 25
+}

@@ -1,0 +1,12 @@
+fun division(int a, int b) double {
+    if (b == 0) {
+        print("Erreur : Division par zÃ©ro.")
+        return -1.0
+    }
+    return a / b
+}
+
+int a = 4
+int b = 2
+int c = division(a, b) + a  ## 4 / 2 + 4 = 6
+print(c)
