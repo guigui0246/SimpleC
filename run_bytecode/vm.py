@@ -19,10 +19,11 @@ class VirtualMachine:
     def __init__(self) -> None:
         self.stack: list[Any] = []
         self.variables: dict[str, Any] = {}
-        self.output: list[Any] = []
+        self.output: str = ""
         self.functions: dict[str, FunctionInfo] = {}
+        self.index_stack: list[Any] = []
 
-    def run(self, bytecode: Bytecode) -> list[Any]:
+    def run(self, bytecode: Bytecode) -> str:
         self.functions = bytecode.functions
         self._execute_instructions(bytecode.instructions, local_vars=None)
         return self.output
@@ -74,8 +75,7 @@ class VirtualMachine:
 
             if op == "PRINT":
                 value = self.stack.pop()
-                print(value)
-                self.output.append(value)
+                self.output += str(value)
                 ip += 1
                 continue
 
@@ -125,26 +125,29 @@ class VirtualMachine:
                 continue
 
             if op == "GET_INDEX":
-                index = self.stack.pop()
-                target = self.stack.pop()
-                try:
-                    self.stack.append(target[int(index)])
-                except Exception as exc:
-                    raise VmRuntimeError(f"Invalid index access: {exc}") from exc
+                count = int(arg)
+                self.index_stack.append(self.stack.pop() for _ in range(count))
+                val = self.stack.pop()
+                while self.index_stack:
+                    index = self.index_stack.pop()
+                    try:
+                        val = val[index]
+                    except (IndexError, KeyError, TypeError) as exc:
+                        raise VmRuntimeError(f"Indexing error: {exc}") from exc
+                self.stack.append(val)
                 ip += 1
                 continue
 
             if op == "SET_INDEX":
+                name, count = arg
+                self.index_stack.append(self.stack.pop() for _ in range(int(count)))
                 value = self.stack.pop()
-                index = self.stack.pop()
-                target = self.stack.pop()
-                if not isinstance(target, list):
-                    raise VmRuntimeError("SET_INDEX requires a list target")
-                idx = int(index)
-                if idx < 0 or idx >= len(target):
-                    raise VmRuntimeError("Index out of bounds")
-                target[idx] = value
-                self.stack.append(target)
+                val = value
+                index = self.index_stack.pop()
+                while self.index_stack:
+                    val = value[index]
+                    index = self.index_stack.pop()
+                val[index] = value
                 ip += 1
                 continue
 
@@ -201,8 +204,7 @@ class VirtualMachine:
     def _call_function(self, name: str, args: list[Any]) -> Any:
         if name == "print":
             for item in args:
-                print(item)
-                self.output.append(item)
+                self.output += str(item)
             return None
 
         info = self.functions.get(name)

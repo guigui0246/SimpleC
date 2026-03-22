@@ -42,8 +42,14 @@ class VarDecl(Stmt):
 
 
 @dataclass(frozen=True)
-class Assign(Stmt):
+class LValue:
     name: str
+    indexs: list[Expr] | None = None
+
+
+@dataclass(frozen=True)
+class Assign(Stmt):
+    name: LValue
     value: Expr
 
 
@@ -102,13 +108,6 @@ class TryCatch(Stmt):
 @dataclass(frozen=True)
 class ExprStmt(Stmt):
     expr: Expr
-
-
-@dataclass(frozen=True)
-class ArrayAssign(Stmt):
-    name: str
-    index: Expr
-    value: Expr
 
 
 @dataclass(frozen=True)

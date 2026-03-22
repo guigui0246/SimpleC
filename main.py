@@ -24,13 +24,13 @@ def cmd_run(source: Path) -> None:
     ast = parse_file(source)
     bytecode = compile_program(ast)
     vm = VirtualMachine()
-    vm.run(bytecode)
+    print(vm.run(bytecode))
 
 
 def cmd_run_bytecode(input_path: Path) -> None:
     bytecode = load_bytecode(input_path)
     vm = VirtualMachine()
-    vm.run(bytecode)
+    print(vm.run(bytecode))
 
 
 def build_parser() -> argparse.ArgumentParser:

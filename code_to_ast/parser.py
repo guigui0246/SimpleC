@@ -7,7 +7,6 @@ from typing import Any
 from lark import Lark, Token, Transformer
 
 from .ast_nodes import (
-    ArrayAssign,
     ArrayLiteral,
     Assign,
     BinOp,
@@ -22,6 +21,7 @@ from .ast_nodes import (
     FunctionParam,
     If,
     IndexAccess,
+    LValue,
     Number,
     Print,
     Program,
@@ -92,13 +92,18 @@ class ToAst(Transformer[Any, Any]):
             type = infer_type_from_expr(expr)
         return VarDecl(name=str(name_token), type=type, value=expr)
 
+    def unwrap_any(self, items: list[Any]) -> Any:
+        return items[0]
+
+    def lvalue(self, items: list[Any]) -> LValue:
+        name_token = items[0]
+        if len(items) == 1:
+            return LValue(name=str(name_token), indexs=None)
+        return LValue(name=str(name_token), indexs=items[1:])
+
     def assign(self, items: list[Any]) -> Assign:
         name_token, expr = items
-        return Assign(name=str(name_token), value=expr)
-
-    def array_assign(self, items: list[Any]) -> ArrayAssign:
-        name_token, index, expr = items
-        return ArrayAssign(name=str(name_token), index=index, value=expr)
+        return Assign(name=name_token, value=expr)
 
     def print_stmt(self, items: list[Any]) -> Print:
         (expr,) = items
@@ -110,16 +115,18 @@ class ToAst(Transformer[Any, Any]):
         elif_branches: list[tuple[Expr, list[Stmt]]] = []
         else_body: list[Stmt] | None = None
 
-        for chunk in items[2:]:
-            if isinstance(chunk, tuple):
-                elif_branches.append(chunk)
-            elif isinstance(chunk, list):
-                else_body = self._as_stmt_list(chunk)
+        for i in range(2, len(items) - 1, 2):
+            elif_branches.append((items[i], items[i + 1]))
 
-        node = If(condition=condition, then_body=then_body, else_body=else_body)
-        for elif_condition, elif_body in reversed(elif_branches):
-            node = If(condition=elif_condition, then_body=elif_body, else_body=[node])
-        return node
+        if len(items) % 2 == 1:
+            else_body = items[-1]
+
+        if elif_branches:
+            current_else_body: list[Stmt] | None = else_body
+            for elif_condition, elif_then_body in reversed(elif_branches):
+                current_else_body = [If(condition=elif_condition, then_body=elif_then_body, else_body=current_else_body)]
+            else_body = current_else_body
+        return If(condition=condition, then_body=then_body, else_body=else_body)
 
     def elif_clause(self, items: list[Any]) -> tuple[Expr, list[Stmt]]:
         condition, body = items
@@ -314,6 +321,7 @@ _PARSER = Lark(_load_grammar(), parser="lalr", start="start")
 
 def parse_code(source: str) -> Program:
     tree = _PARSER.parse(source)
+    # print(tree.pretty())
     transformed: Any = ToAst().transform(tree)
     if not isinstance(transformed, Program):
         raise TypeError(f"Expected Program AST, got: {type(transformed).__name__}")

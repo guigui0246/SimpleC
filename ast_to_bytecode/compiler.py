@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any
 
 from code_to_ast.ast_nodes import (
-    ArrayAssign,
     ArrayLiteral,
     Assign,
     BinOp,
@@ -63,16 +62,14 @@ class Compiler:
             return
 
         if isinstance(stmt, Assign):
+            if stmt.name.indexs is None:
+                self.compile_expr(stmt.value)
+                self.emit("STORE", stmt.name.name)
+                return
+            for index_expr in stmt.name.indexs:
+                self.compile_expr(index_expr)
             self.compile_expr(stmt.value)
-            self.emit("STORE", stmt.name)
-            return
-
-        if isinstance(stmt, ArrayAssign):
-            self.emit("LOAD", stmt.name)
-            self.compile_expr(stmt.index)
-            self.compile_expr(stmt.value)
-            self.emit("SET_INDEX")
-            self.emit("STORE", stmt.name)
+            self.emit("SET_INDEX", (stmt.name.name, len(stmt.name.indexs)))
             return
 
         if isinstance(stmt, Print):
@@ -260,7 +257,7 @@ class Compiler:
         if isinstance(expr, IndexAccess):
             self.compile_expr(expr.target)
             self.compile_expr(expr.index)
-            self.emit("GET_INDEX")
+            self.emit("GET_INDEX", 1)
             return
 
         if isinstance(expr, Call):

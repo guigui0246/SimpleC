@@ -1,5 +1,4 @@
 from .ast_nodes import (
-    ArrayAssign,
     ArrayLiteral,
     Assign,
     BinOp,
@@ -27,7 +26,6 @@ from .parser import parse_code, parse_file
 
 __all__ = [
     "Assign",
-    "ArrayAssign",
     "ArrayLiteral",
     "BinOp",
     "BoolValue",

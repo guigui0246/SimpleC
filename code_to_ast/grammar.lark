@@ -6,7 +6,7 @@ program_statement: simple_statement stmt_end               -> unwrap_statement
                  | compound_statement                      -> unwrap_statement
 
 declare_statement: type NAME "=" expr                      -> var_decl
-                 | assignment                              -> assign
+                 | assignment                              -> unwrap_any
 
 simple_statement: declare_statement                        -> unwrap_statement
                 | "print" "(" expr ")"                     -> print_stmt
@@ -25,7 +25,7 @@ stmt_end: ";" _NL*                                         -> drop
         | _NL+                                             -> drop
 
 lvalue: NAME ("[" expr "]")*
-assignment: lvalue "=" expr
+assignment: lvalue "=" expr                                -> assign
 
 params: type NAME ("," type NAME)*
 
@@ -79,6 +79,9 @@ type: base_type ("[" expr? "]")*                           -> type_parse
      | NAME -> var
      | array
      | "(" expr ")"
+     | VOID
+
+VOID: "void"
 
 ?postfix: NAME "(" args? ")"                               -> call
         | atom "[" expr "]"                                -> index_access
