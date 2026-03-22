@@ -49,8 +49,14 @@ class ToAst(Transformer[Any, Any]):
     def block(self, items: list[Any]) -> list[Stmt]:
         return [item for item in items if isinstance(item, Stmt)]
 
+    def type(self, items: list[Any]) -> None:
+        return None
+
     def var_decl(self, items: list[Any]) -> VarDecl:
-        name_token, expr = items
+        if len(items) == 3:
+            _, name_token, expr = items
+        else:
+            name_token, expr = items
         return VarDecl(name=str(name_token), value=expr)
 
     def assign(self, items: list[Any]) -> Assign:
@@ -95,31 +101,28 @@ class ToAst(Transformer[Any, Any]):
         return While(condition=condition, body=body)
 
     def for_var_decl(self, items: list[Any]) -> VarDecl:
-        name_token, expr = items
+        if len(items) == 3:
+            _, name_token, expr = items
+        else:
+            name_token, expr = items
         return VarDecl(name=str(name_token), value=expr)
 
     def for_assign(self, items: list[Any]) -> Assign:
         name_token, expr = items
         return Assign(name=str(name_token), value=expr)
 
+    def for_init_clause(self, items: list[Any]) -> Stmt | None:
+        return items[0] if items else None
+
+    def for_condition_clause(self, items: list[Any]) -> Expr | None:
+        return items[0] if items else None
+
+    def for_update_clause(self, items: list[Any]) -> Stmt | None:
+        return items[0] if items else None
+
     def for_stmt(self, items: list[Any]) -> For:
-        body = items[-1]
-        fragments = items[:-1]
-
-        init: Stmt | None = None
-        condition: Expr | None = None
-        update: Stmt | None = None
-
-        for fragment in fragments:
-            if isinstance(fragment, Stmt):
-                if init is None:
-                    init = fragment
-                else:
-                    update = fragment
-            else:
-                condition = fragment
-
-        return For(init=init, condition=condition, update=update, body=body)
+        init, update, condition, body = items
+        return For(init=init, update=update, condition=condition, body=body)
 
     def params(self, items: list[Any]) -> list[str]:
         return [str(item) for item in items]

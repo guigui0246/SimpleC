@@ -2,22 +2,28 @@ start: program
 
 program: statement*
 
-statement: type NAME "=" expr ";"                                          -> var_decl
-         | NAME "=" expr ";"                                               -> assign
-         | NAME "[" expr "]" "=" expr ";"                                  -> array_assign
-         | "print" "(" expr ")" ";"                                        -> print_stmt
-         | "if" "(" expr ")" block elif_clause* else_clause?               -> if_stmt
-         | "while" "(" expr ")" block                                      -> while_stmt
-         | "for" "(" for_init? ")" "(" for_update? ")" "(" expr? ")" block -> for_stmt
-         | "fun" NAME "(" params? ")" block                                -> fun_def
-         | "return" expr ";"                                               -> return_stmt
-         | "try" block "catch" "(" NAME ")" block                          -> try_catch_stmt
-         | expr ";"                                                        -> expr_stmt
+type: "int" | "bool" | "string" | "double" | "float" | "char" | "void"
 
-for_init: type NAME "=" expr                                               -> for_var_decl
-        | NAME "=" expr                                                    -> for_assign
+statement: type NAME "=" expr ";"                                                                     -> var_decl
+         | NAME "=" expr ";"                                                                          -> assign
+         | NAME "[" expr "]" "=" expr ";"                                                             -> array_assign
+         | "print" "(" expr ")" ";"                                                                   -> print_stmt
+         | "if" "(" expr ")" block elif_clause* else_clause?                                          -> if_stmt
+         | "while" "(" expr ")" block                                                                 -> while_stmt
+         | "for" "(" for_init_clause ")" "(" for_update_clause ")" "(" for_condition_clause ")" block -> for_stmt
+         | "fun" NAME "(" params? ")" block                                                           -> fun_def
+         | "return" expr ";"                                                                          -> return_stmt
+         | "try" block "catch" "(" NAME ")" block                                                     -> try_catch_stmt
+         | expr ";"                                                                                   -> expr_stmt
 
-for_update: NAME "=" expr                                                  -> for_assign
+for_init: type NAME "=" expr                               -> for_var_decl
+        | NAME "=" expr                                    -> for_assign
+
+for_init_clause: for_init?
+for_condition_clause: expr?
+for_update_clause: for_update?
+
+for_update: NAME "=" expr                                  -> for_assign
 
 params: NAME ("," NAME)*
 

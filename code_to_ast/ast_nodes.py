@@ -50,8 +50,8 @@ class While(Stmt):
 @dataclass(frozen=True)
 class For(Stmt):
     init: Stmt | None
-    condition: Expr | None
     update: Stmt | None
+    condition: Expr | None
     body: list[Stmt]
 
 
