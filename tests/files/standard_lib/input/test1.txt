@@ -1,0 +1,6 @@
+void[] a = set([1, 2, 3])
+b = add(a, 5)
+b = remove(b, 1)
+a = remove(a, 3)
+print(a)
+print(b)
