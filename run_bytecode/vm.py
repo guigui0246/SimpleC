@@ -75,6 +75,12 @@ class VirtualMachine:
 
             if op == "PRINT":
                 value = self.stack.pop()
+                if isinstance(value, float) and value.is_integer():
+                    value = int(value)
+                if isinstance(value, str):
+                    value = "'" + value + "'"
+                if isinstance(value, list) and all(isinstance(item, str) for item in value):
+                    value = "".join(value)
                 self.output += str(value)
                 ip += 1
                 continue
@@ -204,6 +210,12 @@ class VirtualMachine:
     def _call_function(self, name: str, args: list[Any]) -> Any:
         if name == "print":
             for item in args:
+                if isinstance(item, float) and item.is_integer():
+                    item = int(item)
+                if isinstance(item, str):
+                    item = "'" + item + "'"
+                if isinstance(item, list) and all(isinstance(i, str) for i in item):
+                    item = "".join(item)
                 self.output += str(item)
             return None
 

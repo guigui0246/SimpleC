@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from ast_to_bytecode import compile_program
-from code_to_ast import parse_file
+from code_to_ast import parse_file, parse_code
 from run_bytecode import VirtualMachine, load_bytecode, save_bytecode
 
 
@@ -50,6 +50,8 @@ def build_parser() -> argparse.ArgumentParser:
     run_bc_parser = subparsers.add_parser("run-bytecode", help="Load and execute saved bytecode")
     run_bc_parser.add_argument("input", type=Path, help="Input bytecode file")
 
+    subparsers.add_parser("tests", help="Run tests")
+
     return parser
 
 
@@ -71,6 +73,11 @@ def main() -> None:
 
     if args.command == "run-bytecode":
         cmd_run_bytecode(args.input)
+        return
+
+    if args.command == "tests":
+        from tests.test_file_outputs import run_tests
+        run_tests(compiler=compile_program, parser=parse_code, vm=VirtualMachine)
         return
 
     raise ValueError(f"Unknown command: {args.command}")

@@ -1,11 +1,20 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Callable, Type, Protocol
 import unittest
 
-from ast_to_bytecode import compile_program
-from code_to_ast import parse_code
-from run_bytecode import VirtualMachine
+
+if TYPE_CHECKING:
+    from ..ast_to_bytecode.instructions import Bytecode
+    from ..ast_to_bytecode import compile_program
+    from ..code_to_ast import parse_code
+    from ..run_bytecode import VirtualMachine
+
+
+class VirtualMachineProto(Protocol):
+    def run(self, bytecode: Bytecode) -> str:
+        ...
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -104,3 +113,11 @@ class TestInputExpectedOutputs(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+else:
+    def run_tests(compiler: Callable[[Any], Any], parser: Callable[[Any], Any], vm: Type[VirtualMachineProto]) -> None:
+        global compile_program, parse_code, VirtualMachine
+        compile_program = compiler
+        parse_code = parser
+        VirtualMachine = vm
+        suite = unittest.TestLoader().loadTestsFromTestCase(TestInputExpectedOutputs)
+        unittest.TextTestRunner(verbosity=2).run(suite)
