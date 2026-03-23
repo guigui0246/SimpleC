@@ -27,7 +27,6 @@ from .ast_nodes import (
     Program,
     Return,
     Stmt,
-    StringValue,
     TryCatch,
     Type,
     TypeType,
@@ -47,8 +46,6 @@ def infer_type_from_expr(expr: Expr) -> Type:
         return Type(base=TypeType.FLOAT, array_dims=None)
     if isinstance(expr, BoolValue):
         return Type(base=TypeType.BOOL, array_dims=None)
-    if isinstance(expr, StringValue):
-        return Type(base=TypeType.STRING, array_dims=None)
     if isinstance(expr, CharValue):
         return Type(base=TypeType.CHAR, array_dims=None)
     if isinstance(expr, VoidValue):
@@ -153,9 +150,6 @@ class ToAst(Transformer[Any, Any]):
     def TYPE_BOOL(self, items: list[Any]) -> TypeType:
         return TypeType.BOOL
 
-    def TYPE_STRING(self, items: list[Any]) -> TypeType:
-        return TypeType.STRING
-
     def TYPE_CHAR(self, items: list[Any]) -> TypeType:
         return TypeType.CHAR
 
@@ -225,9 +219,9 @@ class ToAst(Transformer[Any, Any]):
         token_str = str(token).lower()
         return BoolValue(value=(token_str == "true"))
 
-    def string_value(self, items: list[Any]) -> StringValue:
+    def string_value(self, items: list[Any]) -> ArrayLiteral:
         (token,) = items
-        return StringValue(value=ast.literal_eval(str(token)))
+        return ArrayLiteral(values=[CharValue(value=c) for c in ast.literal_eval(str(token))])
 
     def char_value(self, items: list[Any]) -> CharValue:
         (char,) = items

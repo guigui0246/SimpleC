@@ -22,7 +22,6 @@ class TypeType(enum.Enum):
     INT = "int"
     FLOAT = "float"
     BOOL = "bool"
-    STRING = "string"
     CHAR = "char"
     VOID = "void"
 
@@ -123,11 +122,6 @@ class FloatNumber(Expr):
 @dataclass(frozen=True)
 class BoolValue(Expr):
     value: bool
-
-
-@dataclass(frozen=True)
-class StringValue(Expr):
-    value: str
 
 
 @dataclass(frozen=True)

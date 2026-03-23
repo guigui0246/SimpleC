@@ -21,7 +21,6 @@ from code_to_ast.ast_nodes import (
     Program,
     Return,
     Stmt,
-    StringValue,
     TryCatch,
     UnaryOp,
     Var,
@@ -192,10 +191,6 @@ class Compiler:
             return
 
         if isinstance(expr, BoolValue):
-            self.emit("PUSH", expr.value)
-            return
-
-        if isinstance(expr, StringValue):
             self.emit("PUSH", expr.value)
             return
 

@@ -56,14 +56,12 @@ CHAR: /'([^'\\]|\\.)'/
 
 TYPE_INT: "int"
 TYPE_BOOL: "bool"
-TYPE_STRING: "string"
 TYPE_DOUBLE: "double"
 TYPE_FLOAT: "float"
 TYPE_CHAR: "char"
 TYPE_VOID: "void"
 base_type: TYPE_INT                                        -> unwrap_type
          | TYPE_BOOL                                       -> unwrap_type
-         | TYPE_STRING                                     -> unwrap_type
          | TYPE_DOUBLE                                     -> unwrap_type
          | TYPE_FLOAT                                      -> unwrap_type
          | TYPE_CHAR                                       -> unwrap_type
