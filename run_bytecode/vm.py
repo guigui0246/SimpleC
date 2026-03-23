@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ast_to_bytecode.instructions import Bytecode, FunctionInfo, Instruction
+from code_to_ast.ast_nodes import RangeValue
 
 
 class VmRuntimeError(Exception):
@@ -74,12 +75,14 @@ class VirtualMachine:
                 continue
 
             if op == "PRINT":
-                value = self.stack.pop()
+                value: Any = self.stack.pop()
                 if isinstance(value, float) and value.is_integer():
                     value = int(value)
                 if isinstance(value, str):
                     value = "'" + value + "'"
-                if isinstance(value, list) and all(isinstance(item, str) for item in value):
+                if isinstance(value, list) and all(
+                    isinstance(item, str) for item in value  # type: ignore [reportUnknownVariableType]
+                ):
                     value = "".join(value)
                 self.output += str(value)
                 ip += 1
@@ -201,6 +204,15 @@ class VirtualMachine:
                     ip = int(arg)
                 else:
                     ip += 1
+                continue
+
+            if op == "MAKE_RANGE":
+                end = self.stack.pop()
+                start = self.stack.pop()
+                if not (isinstance(start, int | None) and isinstance(end, int | None)):
+                    raise VmRuntimeError("Range bounds must be integers")
+                self.stack.append(RangeValue(start=start, end=end))
+                ip += 1
                 continue
 
             raise ValueError(f"Unknown opcode: {op}")

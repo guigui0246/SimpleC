@@ -167,3 +167,15 @@ class Call(Expr):
 @dataclass(frozen=True)
 class VoidValue(Expr):
     value: Any = None
+
+
+@dataclass(frozen=True)
+class RangeExpr(Expr):
+    start: Expr | None
+    end: Expr | None
+
+
+@dataclass(frozen=True)
+class RangeValue:
+    start: int | None
+    end: int | None

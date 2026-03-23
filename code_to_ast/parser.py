@@ -25,6 +25,7 @@ from .ast_nodes import (
     Number,
     Print,
     Program,
+    RangeExpr,
     Return,
     Stmt,
     TryCatch,
@@ -252,6 +253,10 @@ class ToAst(Transformer[Any, Any]):
 
     def array_literal(self, items: list[Any]) -> ArrayLiteral:
         return ArrayLiteral(values=list(items))
+
+    def range_expr(self, items: list[Any]) -> RangeExpr:
+        start, end = items
+        return RangeExpr(start=start, end=end)
 
     def index_access(self, items: list[Any]) -> IndexAccess:
         target, index = items

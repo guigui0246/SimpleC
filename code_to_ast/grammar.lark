@@ -37,7 +37,15 @@ block_statement: simple_statement block_stmt_end           -> unwrap_statement
 block_stmt_end: ";" _NL+                                   -> drop
               | _NL+                                       -> drop
 
-?expr: logical_or
+?expr: range_expr
+
+ELLIPSIS.2: "..."
+
+?range_expr: logical_or ELLIPSIS logical_or   -> range_full
+           | logical_or ELLIPSIS        -> range_start
+           | ELLIPSIS logical_or        -> range_end
+           | ELLIPSIS             -> range_empty
+           | logical_or
 
 ?logical_or: logical_xor (OR_OP logical_xor)*
 ?logical_xor: logical_and (XOR_OP logical_and)*
@@ -69,8 +77,8 @@ base_type: TYPE_INT                                        -> unwrap_type
 type: base_type ("[" expr? "]")*                           -> type_parse
 
 ?atom: postfix
-     | NUMBER -> number
      | FLOAT -> float_number
+     | NUMBER -> number
      | BOOL -> bool_value
      | STRING -> string_value
      | CHAR -> char_value
@@ -100,7 +108,7 @@ UNARY_OP: "-" | "not"
 BOOL: "true" | "false" | "True" | "False"
 
 %import common.CNAME -> NAME
-%import common.SIGNED_FLOAT -> FLOAT
+FLOAT.2: /\d+\.\d+/
 %import common.INT -> NUMBER
 %import common.ESCAPED_STRING -> STRING
 %import common.NEWLINE -> _NL

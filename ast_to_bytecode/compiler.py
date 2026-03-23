@@ -19,6 +19,8 @@ from code_to_ast.ast_nodes import (
     Number,
     Print,
     Program,
+    RangeExpr,
+    RangeValue,
     Return,
     Stmt,
     TryCatch,
@@ -200,6 +202,21 @@ class Compiler:
 
         if isinstance(expr, VoidValue):
             self.emit("PUSH", None)
+            return
+
+        if isinstance(expr, RangeExpr):
+            if expr.start is None and expr.end is None:  # Optimization for full open range
+                self.emit("PUSH", RangeValue(start=None, end=None))
+                return
+            if expr.start is None:
+                self.emit("PUSH", None)
+            else:
+                self.compile_expr(expr.start)
+            if expr.end is None:
+                self.emit("PUSH", None)
+            else:
+                self.compile_expr(expr.end)
+            self.emit("MAKE_RANGE")
             return
 
         if isinstance(expr, Var):
