@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 from typing import Any, cast
 
@@ -53,9 +54,9 @@ class VirtualMachine:
             if op == "LOAD":
                 name = str(arg)
                 if local_vars is not None and name in local_vars:
-                    self.stack.append(local_vars[name])
+                    self.stack.append(copy.deepcopy(local_vars[name]))
                 elif name in self.variables:
-                    self.stack.append(self.variables[name])
+                    self.stack.append(copy.deepcopy(self.variables[name]))
                 else:
                     raise VmRuntimeError(f"Undefined variable: {name}")
                 ip += 1
@@ -65,9 +66,9 @@ class VirtualMachine:
                 name = str(arg)
                 value = self.stack.pop()
                 if local_vars is not None:
-                    local_vars[name] = value
+                    local_vars[name] = copy.deepcopy(value)
                 else:
-                    self.variables[name] = value
+                    self.variables[name] = copy.deepcopy(value)
                 ip += 1
                 continue
 
@@ -132,18 +133,28 @@ class VirtualMachine:
                 items = self.stack[-count:] if count > 0 else []
                 if count > 0:
                     del self.stack[-count:]
-                self.stack.append(items)
+                self.stack.append(copy.deepcopy(items))
                 ip += 1
                 continue
 
             if op == "GET_INDEX":
                 count = int(arg)
-                self.index_stack.append(self.stack.pop() for _ in range(count))
+                self.index_stack.extend(self.stack.pop() for _ in range(count))
                 val = self.stack.pop()
                 while self.index_stack:
                     index = self.index_stack.pop()
                     try:
-                        val = val[index]
+                        if isinstance(index, RangeValue):
+                            if index.start is None and index.end is None:
+                                val = val[:]
+                            elif index.start is None:
+                                val = val[:index.end]
+                            elif index.end is None:
+                                val = val[index.start:]
+                            else:
+                                val = val[index.start:index.end]
+                        else:
+                            val = val[index]
                     except (IndexError, KeyError, TypeError) as exc:
                         raise VmRuntimeError(f"Indexing error: {exc}") from exc
                 self.stack.append(val)
@@ -152,12 +163,12 @@ class VirtualMachine:
 
             if op == "SET_INDEX":
                 name, count = arg
-                self.index_stack.append(self.stack.pop() for _ in range(int(count)))
                 value = self.stack.pop()
-                val = value
+                self.index_stack.extend(self.stack.pop() for _ in range(int(count)))
+                val = local_vars[name] if local_vars is not None and name in local_vars else self.variables[name]
                 index = self.index_stack.pop()
                 while self.index_stack:
-                    val = value[index]
+                    val = val[index]
                     index = self.index_stack.pop()
                 val[index] = value
                 ip += 1
@@ -167,7 +178,7 @@ class VirtualMachine:
                 fn_name = str(arg["name"])
                 argc = int(arg["argc"])
                 args = [self.stack.pop() for _ in range(argc)][::-1]
-                self.stack.append(self._call_function(fn_name, args))
+                self.stack.append(copy.deepcopy(self._call_function(fn_name, copy.deepcopy(args))))
                 ip += 1
                 continue
 

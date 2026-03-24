@@ -5,7 +5,7 @@ WARNING: This files needs length and find to be defined or imported
 ## This creates a set from a list
 fun set(void[0] list) void[0] {
     void[0] new_list = []
-    for (int index = 0) (index = index + 1) (index < length(new_list)) {
+    for (int index = 0) (index = index + 1) (index < length(list)) {
         elem = list[index]
         if (find(new_list, elem) == -1) {
             new_list = new_list + [elem]
@@ -27,10 +27,11 @@ fun remove(void[0] list, void elem) void[0] {
     int index = find(list, elem)
     if (index != -1) {
         int len = length(list)
-        while (index < len) {
+        while (index < len - 1) {
             list[index] = list[index + 1]
             index = index + 1
         }
+        return list[...len - 1]
     }
     return list
 }

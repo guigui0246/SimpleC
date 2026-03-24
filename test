@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "instructions": [
+    {
+      "op": "PUSH",
+      "arg": 1
+    },
+    {
+      "op": "PUSH",
+      "arg": 2
+    },
+    {
+      "op": "PUSH",
+      "arg": 3
+    },
+    {
+      "op": "MAKE_LIST",
+      "arg": 3
+    },
+    {
+      "op": "CALL",
+      "arg": {
+        "name": "set",
+        "argc": 1
+      }
+    },
+    {
+      "op": "STORE",
+      "arg": "a"
+    },
+    {
+      "op": "LOAD",
+      "arg": "a"
+    },
+    {
+      "op": "PRINT",
+      "arg": null
+    },
+    {
+      "op": "LOAD",
+      "arg": "a"
+    },
+    {
+      "op": "PUSH",
+      "arg": 5
+    },
+    {
+      "op": "CALL",
+      "arg": {
+        "name": "add",
+        "argc": 2
+      }
+    },
+    {
+      "op": "STORE",
+      "arg": "b"
+    },
+    {
+      "op": "LOAD",
+      "arg": "a"
+    },
+    {
+      "op": "PRINT",
+      "arg": null
+    },
+    {
+      "op": "LOAD",
+      "arg": "b"
+    },
+    {
+      "op": "PRINT",
+      "arg": null
+    },
+    {
+      "op": "LOAD",
+      "arg": "b"
+    },
+    {
+      "op": "PUSH",
+      "arg": 1
+    },
+    {
+      "op": "CALL",
+      "arg": {
+        "name": "remove",
+        "argc": 2
+      }
+    },
+    {
+      "op": "STORE",
+      "arg": "b"
+    },
+    {
+      "op": "LOAD",
+      "arg": "a"
+    },
+    {
+      "op": "PRINT",
+      "arg": null
+    },
+    {
+      "op": "LOAD",
+      "arg": "b"
+    },
+    {
+      "op": "PRINT",
+      "arg": null
+    },
+    {
+      "op": "LOAD",
+      "arg": "a"
+    },
+    {
+      "op": "PUSH",
+      "arg": 3
+    },
+    {
+      "op": "CALL",
+      "arg": {
+        "name": "remove",
+        "argc": 2
+      }
+    },
+    {
+      "op": "STORE",
+      "arg": "a"
+    },
+    {
+      "op": "LOAD",
+      "arg": "a"
+    },
+    {
+      "op": "PRINT",
+      "arg": null
+    },
+    {
+      "op": "LOAD",
+      "arg": "b"
+    },
+    {
+      "op": "PRINT",
+      "arg": null
+    }
+  ],
+  "functions": {}
+}

@@ -53,7 +53,6 @@ class Compiler:
     def compile_program(self, program: Program) -> Bytecode:
         for stmt in program.statements:
             self.compile_stmt(stmt)
-        self.emit("HALT")
         return Bytecode(instructions=self.instructions, functions=self.functions)
 
     def compile_stmt(self, stmt: Stmt) -> None:
