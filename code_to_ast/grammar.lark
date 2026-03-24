@@ -92,7 +92,9 @@ VOID: "void"
 ?postfix: NAME "(" args? ")"                               -> call
         | atom "[" expr "]"                                -> index_access
 
-array: "[" [expr ("," expr)*] "]"                          -> array_literal
+array: "[" arr_expr_list? "]"                          -> array_literal
+
+arr_expr_list: expr ("," expr)*
 
 args: expr ("," expr)*
 

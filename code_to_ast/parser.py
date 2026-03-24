@@ -57,6 +57,9 @@ def infer_type_from_expr(expr: Expr) -> Type:
         elem_types: list[Type] = [infer_type_from_expr(val) for val in expr.values]
         if not all(elem_type == elem_types[0] for elem_type in elem_types):
             raise ValueError("All elements in array literal must have the same type")
+        if elem_types[0].array_dims is not None:
+            if not all(elem_type.array_dims == elem_types[0].array_dims for elem_type in elem_types):
+                raise ValueError("All elements in array literal must have the same array dimensions")
         return Type(base=elem_types[0].base, array_dims=[len(expr.values)] + (elem_types[0].array_dims or []))
 
     raise ValueError(f"Cannot infer type from expression: {expr!r}")
@@ -166,6 +169,8 @@ class ToAst(Transformer[Any, Any]):
         for item in items[1:]:
             if isinstance(item, Token) and item.type == "NUMBER":
                 array_dims.append(int(item))
+            else:
+                array_dims.append(0)
         return Type(base=base_type_token, array_dims=array_dims or None)
 
     def fun_def(self, items: list[Any]) -> FunctionDef:
@@ -251,12 +256,23 @@ class ToAst(Transformer[Any, Any]):
     def args(self, items: list[Any]) -> list[Expr]:
         return list(items)
 
-    def array_literal(self, items: list[Any]) -> ArrayLiteral:
-        return ArrayLiteral(values=list(items))
+    def arr_expr_list(self, items: list[Any]) -> list[Expr]:
+        return items
 
-    def range_expr(self, items: list[Any]) -> RangeExpr:
-        start, end = items
-        return RangeExpr(start=start, end=end)
+    def array_literal(self, items: list[Any]) -> ArrayLiteral:
+        return ArrayLiteral(values=list(items[0] if items else []))
+
+    def range_full(self, items: list[Any]) -> RangeExpr:
+        return RangeExpr(start=items[0], end=items[2])
+
+    def range_start(self, items: list[Any]) -> RangeExpr:
+        return RangeExpr(start=items[0], end=None)
+
+    def range_end(self, items: list[Any]) -> RangeExpr:
+        return RangeExpr(start=None, end=items[1])
+
+    def range_empty(self, _items: list[Any]) -> RangeExpr:
+        return RangeExpr(start=None, end=None)
 
     def index_access(self, items: list[Any]) -> IndexAccess:
         target, index = items
