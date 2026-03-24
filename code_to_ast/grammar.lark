@@ -17,7 +17,7 @@ compound_statement: "if" "(" expr ")" block ("elif" "(" expr ")" block)* ("else"
                   | "while" "(" expr ")" block                                                  -> while_stmt
                   | "for" "(" declare_statement? ")" "(" assignment? ")" "(" expr ")" block     -> for_stmt
                   | "fun" NAME "(" params? ")" type block                                            -> fun_def
-                  | "try" block "catch" "(" NAME ")" block                                      -> try_catch_stmt
+                  | "try" block "catch" NAME block                                      -> try_catch_stmt
 
 statement: simple_statement | compound_statement           -> unwrap_statement
 
