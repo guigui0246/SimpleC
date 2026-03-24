@@ -1,0 +1,1 @@
+Pair :6n is Even 6Impair :5n is Odd 5Pair :4n is Even 4Impair :3n is Odd 3Pair :2n is Even 2Impair :1n is Odd 1Terminé0

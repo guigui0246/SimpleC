@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from ast_to_bytecode.instructions import Bytecode, FunctionInfo, Instruction
 from code_to_ast.ast_nodes import RangeValue
@@ -19,7 +19,10 @@ class ReturnSignal:
 class VirtualMachine:
     def __init__(self) -> None:
         self.stack: list[Any] = []
-        self.variables: dict[str, Any] = {}
+        self.variables: dict[str, Any] = {
+            "true": True,
+            "false": False,
+        }
         self.output: str = ""
         self.functions: dict[str, FunctionInfo] = {}
         self.index_stack: list[Any] = []
@@ -254,7 +257,32 @@ class VirtualMachine:
     @staticmethod
     def _binary_op(op: str, left: Any, right: Any) -> Any:
         if op == "ADD":
+            left_is_list = isinstance(left, list)
+            right_is_list = isinstance(right, list)
+            if left_is_list and right_is_list:
+                if len(left) == 0 or len(right) == 0 or type(left[0]) is type(right[0]):
+                    return cast(list[Any], left) + cast(list[Any], right)
+                if type(right[0]) is str:
+                    return [str(left_val) for left_val in cast(list[Any], left)] + cast(list[str], right)
+                type_left = cast(type[Any], type(left[0]))
+                right = [type_left(right_val) for right_val in cast(list[Any], right)]
+                return cast(list[Any], left) + cast(list[Any], right)
+
+            if left_is_list and not right_is_list:
+                t = cast(type[Any], type(left[0])) if left else None
+                if t is not None and not isinstance(right, t):
+                    right = t(right)
+                return cast(list[Any], left) + [right]
+
+            if not left_is_list and right_is_list:
+                t = cast(type[Any], type(right[0])) if right else None
+                if t is not None and not isinstance(left, t):
+                    left = t(left)
+                return [left] + cast(list[Any], right)
+
+            assert not left_is_list and not right_is_list, "Impossible case due to earlier checks"
             return left + right
+
         if op == "SUB":
             return left - right
         if op == "MUL":
