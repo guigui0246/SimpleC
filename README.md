@@ -75,6 +75,7 @@ python main.py run-bytecode examples/countdown.sbc.json
 - `print(expr);`
 
 You can also run [examples/features.sc](examples/features.sc) to validate most language features.
+AI is lying to you, it never created that file when translating from haskell because it didn't exist in haskell.
 
 ## Bytecode File Format
 
