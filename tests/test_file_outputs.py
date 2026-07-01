@@ -5,21 +5,28 @@ from typing import TYPE_CHECKING, Any, Callable, Type, Protocol
 import unittest
 
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
+TEST_FILES_DIR = ROOT_DIR / "tests" / "files"
+STANDARD_LIB_DIR = ROOT_DIR / "standard_lib"
+
+
 if TYPE_CHECKING:
     from ..ast_to_bytecode.instructions import Bytecode
-    from ..ast_to_bytecode import compile_program
-    from ..code_to_ast import parse_code
-    from ..run_bytecode import VirtualMachine
+    from ..ast_to_bytecode.compiler import compile_program
+    from ..code_to_ast.parser import parse_code
+    from ..run_bytecode.vm import VirtualMachine
+else:
+    import sys
+    if str(ROOT_DIR) not in sys.path:
+        sys.path.insert(0, str(ROOT_DIR))
+    from ast_to_bytecode.compiler import compile_program
+    from code_to_ast.parser import parse_code
+    from run_bytecode.vm import VirtualMachine
 
 
 class VirtualMachineProto(Protocol):
     def run(self, bytecode: Bytecode) -> str:
         ...
-
-
-ROOT_DIR = Path(__file__).resolve().parents[1]
-TEST_FILES_DIR = ROOT_DIR / "tests" / "files"
-STANDARD_LIB_DIR = ROOT_DIR / "standard_lib"
 
 
 def _normalize_output(text: str) -> str:
