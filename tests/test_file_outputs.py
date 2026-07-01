@@ -92,8 +92,9 @@ def _isolated_run_python_bytecode(python_code: str) -> str:
             capture_output=True,
             text=True,
             check=True,
+            encoding="utf-8"
         )
-        return result.stdout.replace("Ã©", "é")
+        return result.stdout
     except subprocess.CalledProcessError as e:
         raise RuntimeError(
             f"Python execution failed with exit code {e.returncode}:\n{e.stderr}"
