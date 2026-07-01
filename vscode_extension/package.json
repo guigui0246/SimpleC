@@ -1,0 +1,120 @@
+{
+  "name": "simplec-tools",
+  "displayName": "SimpleC Tools",
+  "description": "Run, parse, compile, and test SimpleC programs from VS Code.",
+  "version": "0.1.0",
+  "publisher": "simplec",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "activationEvents": [
+    "onLanguage:simplec",
+    "onCommand:simplec.parseCurrentFile",
+    "onCommand:simplec.runCurrentFile",
+    "onCommand:simplec.compileCurrentFile",
+    "onCommand:simplec.runBytecodeFile",
+    "onCommand:simplec.runTests"
+  ],
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "simplec",
+        "aliases": [
+          "SimpleC",
+          "simplec"
+        ],
+        "extensions": [
+          ".sc",
+          ".glados"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "simplec",
+        "scopeName": "source.simplec",
+        "path": "./syntaxes/simplec.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "simplec.parseCurrentFile",
+        "title": "SimpleC: Parse Current File"
+      },
+      {
+        "command": "simplec.runCurrentFile",
+        "title": "SimpleC: Run Current File"
+      },
+      {
+        "command": "simplec.compileCurrentFile",
+        "title": "SimpleC: Compile Current File"
+      },
+      {
+        "command": "simplec.runBytecodeFile",
+        "title": "SimpleC: Run Bytecode File"
+      },
+      {
+        "command": "simplec.runTests",
+        "title": "SimpleC: Run Test Suite"
+      }
+    ],
+    "configuration": {
+      "title": "SimpleC Tools",
+      "properties": {
+        "simplec.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Python executable used to run the SimpleC CLI (for example: python, py, /usr/bin/python3)."
+        },
+        "simplec.runtimeMode": {
+          "type": "string",
+          "enum": [
+            "bundled",
+            "workspace",
+            "custom"
+          ],
+          "default": "bundled",
+          "description": "Choose where the SimpleC CLI is loaded from. bundled uses the extension-packaged runtime, workspace uses your project main.py, custom uses simplec.customCliPath."
+        },
+        "simplec.workspaceCliPath": {
+          "type": "string",
+          "default": "main.py",
+          "description": "Path to the workspace SimpleC CLI entrypoint. Relative paths are resolved from the current workspace root."
+        },
+        "simplec.customCliPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute or workspace-relative path to a custom SimpleC CLI entrypoint when simplec.runtimeMode is custom."
+        },
+        "simplec.additionalArgs": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Extra arguments inserted before each SimpleC command."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "sync-bundle": "node ./scripts/sync-bundle.mjs",
+    "compile": "npm run sync-bundle && tsc -p ./",
+    "watch": "npm run sync-bundle && tsc -watch -p ./",
+    "vscode:prepublish": "npm run sync-bundle && npm run compile",
+    "package": "npx @vscode/vsce package --allow-missing-repository",
+    "install-local": "npm run package && code --install-extension simplec-tools-0.1.0.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.5.4"
+  }
+}
