@@ -6,11 +6,16 @@ from typing import Any
 
 from ast_to_bytecode.instructions import Bytecode, FunctionInfo, Instruction
 
+try:
+    from .to_python import python_export
+except ImportError:
+    python_export = None  # type: ignore
+
 
 BYTECODE_VERSION = 1
 
 
-def save_bytecode(bytecode: Bytecode, output_path: str | Path) -> None:
+def json_export(bytecode: Bytecode) -> str:
     def serialize_instruction(instr: Instruction) -> dict[str, Any]:
         return {"op": instr.op, "arg": instr.arg}
 
@@ -25,7 +30,23 @@ def save_bytecode(bytecode: Bytecode, output_path: str | Path) -> None:
             for name, info in bytecode.functions.items()
         },
     }
-    Path(output_path).write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return json.dumps(payload, indent=2)
+
+
+def save_bytecode(bytecode: Bytecode, output_path: str | Path, format: str = "json") -> None:
+    if format == "json":
+        Path(output_path).write_text(json_export(bytecode), encoding="utf-8")
+    elif format == "python" and python_export is not None:
+        Path(output_path).write_text(python_export(bytecode), encoding="utf-8")
+    else:
+        raise ValueError(f"Unsupported format: {format}")
+
+
+def available_bytecode_formats() -> list[str]:
+    available = ["json"]
+    if python_export is not None:
+        available.append("python")
+    return available
 
 
 def load_bytecode(input_path: str | Path) -> Bytecode:

@@ -5,17 +5,26 @@ from pathlib import Path
 from ast_to_bytecode import compile_program, Bytecode
 from code_to_ast import parse_file, parse_code
 from run_bytecode import VirtualMachine, load_bytecode, save_bytecode
+from run_bytecode.bytecode_file import available_bytecode_formats
 
 
-def cmd_parse(source: Path) -> None:
-    ast = parse_file(source)
-    print(ast)
+def cmd_parse(source: list[Path]) -> None:
+    for src in source:
+        ast = parse_file(src)
+        print(ast)
 
 
-def cmd_compile(source: Path, output: Path) -> None:
-    ast = parse_file(source)
-    bytecode = compile_program(ast)
-    save_bytecode(bytecode, output)
+def cmd_compile(source: list[Path], output: Path, force: bool, format: str) -> None:
+    if not force and output.exists():
+        raise ValueError(f"Output file already exists: {output}")
+
+    bytecode: Bytecode = Bytecode([], {})
+    for src in source:
+        ast = parse_file(src)
+        new_code = compile_program(ast)
+        bytecode.functions.update(new_code.functions)
+        bytecode.instructions.extend(new_code.instructions)
+    save_bytecode(bytecode, output, format)
     print(f"Bytecode saved to: {output}")
 
 
@@ -73,11 +82,18 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     parse_parser = subparsers.add_parser("parse", help="Parse source code and print AST")
-    parse_parser.add_argument("source", type=Path, help="Source .sc file")
+    parse_parser.add_argument("source", type=Path, help="Source .sc file", nargs="+")
 
     compile_parser = subparsers.add_parser("compile", help="Compile source file to bytecode")
-    compile_parser.add_argument("source", type=Path, help="Source .sc file")
+    compile_parser.add_argument("source", type=Path, help="Source .sc file", nargs="+")
     compile_parser.add_argument("-o", "--output", type=Path, required=True, help="Output bytecode file")
+    compile_parser.add_argument("-f", "--force", action="store_true", help="Overwrite output file if it exists")
+    compile_parser.add_argument(
+        "--output-format",
+        choices=available_bytecode_formats(),
+        default="json",
+        help="Output format for bytecode (default: json)"
+    )
 
     run_parser = subparsers.add_parser("run", help="Parse + compile + execute source file")
     run_parser.add_argument("source", type=Path, help="Source .sc file", nargs="+")
@@ -99,7 +115,7 @@ def main() -> None:
         return
 
     if args.command == "compile":
-        cmd_compile(args.source, args.output)
+        cmd_compile(args.source, args.output, args.force, args.output_format)
         return
 
     if args.command == "run":
