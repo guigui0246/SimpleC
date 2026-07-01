@@ -18,6 +18,10 @@ class VarNames:
     GET_INDEX: str = "get_index"
     SET_INDEX: str = "set_index"
     PRINT: str = "print"
+    LEN: str = "len"
+    IS_INSTANCE: str = "isinstance"
+    IP: str = "ip"
+    COPY: str = "copy"
 
 
 class Goto(BaseException):
@@ -55,7 +59,7 @@ def compile_instruction_to_python(instr: Instruction, var_names: VarNames, *, is
             ]
 
         case "LOAD":
-            return [f"{var_names.STACK}.append(copy.deepcopy({instr.arg}))"]
+            return [f"{var_names.STACK}.append({var_names.COPY}.deepcopy({instr.arg}))"]
 
         case "STORE":
             return [f"{instr.arg}: {var_names.ANY} = {var_names.STACK}.pop()"]
@@ -118,7 +122,9 @@ def compile_instruction_to_python(instr: Instruction, var_names: VarNames, *, is
                 raise ValueError(f"Invalid size for MAKE_LIST: {size}")
             if size == 0:
                 return [f"{var_names.STACK}.append([])"]
-            return [f"{var_names.STACK}.append(copy.deepcopy([{var_names.STACK}.pop() for _ in range({size})][::-1]))"]
+            return [
+                f"{var_names.STACK}.append({var_names.COPY}.deepcopy([{var_names.STACK}.pop() for _ in range({size})][::-1]))"
+            ]
 
         case "GET_INDEX":
             count = int(instr.arg)
@@ -137,7 +143,7 @@ def compile_instruction_to_python(instr: Instruction, var_names: VarNames, *, is
         case "CALL":
             func_name, argc = instr.arg["name"], int(instr.arg["argc"])
             return [
-                f"{var_names.STACK}.append(copy.deepcopy("
+                f"{var_names.STACK}.append({var_names.COPY}.deepcopy("
                 f"{func_name}(*[{var_names.STACK}.pop() for _ in range({argc})][::-1])))"
             ]
 
@@ -204,7 +210,7 @@ def compile_function_to_python(func_name: str, func_info: FunctionInfo, var_name
         lines.extend([
             line for lines in cast(list[list[str]], code_lines[:minimum]) for line in lines
         ])
-        lines.append(f"    ip: int = {minimum}")
+        lines.append(f"    {var_names.IP}: int = {minimum}")
         lines.append("    while True:")
         count = 0
         for ind, line in enumerate(code_lines):
@@ -212,22 +218,22 @@ def compile_function_to_python(func_name: str, func_info: FunctionInfo, var_name
                 continue
             if ind in usefull:
                 if ind != minimum and lines[-1].strip() != "continue":
-                    lines.append(f"            ip += {count}")
-                lines.append(f"        if ip == {ind}:")
+                    lines.append(f"            {var_names.IP} += {count}")
+                lines.append(f"        if {var_names.IP} == {ind}:")
                 count = 0
             count += 1
             if isinstance(line, Goto):
                 if line.condition is not None:
                     lines.append(f"            if {line.condition}:")
-                    lines.append(f"                ip = {line.line}")
+                    lines.append(f"                {var_names.IP} = {line.line}")
                     lines.append("                continue")
                 else:
-                    lines.append(f"            ip = {line.line}")
+                    lines.append(f"            {var_names.IP} = {line.line}")
                     lines.append("            continue")
             else:
                 lines.extend([f"        {line}" for line in line])
-        lines.append(f"            ip += {count}")
-        lines.append(f"        if ip > {ind}:")
+        lines.append(f"            {var_names.IP} += {count}")
+        lines.append(f"        if {var_names.IP} > {ind}:")
         lines.append("            break")
     else:
         lines.extend([line for _lines in cast(list[list[str]], code_lines) for line in _lines])
@@ -257,22 +263,22 @@ def {SET_INDEX}({VAL}: {ANY}, count: int):
 """,
     "print": """
 def {PRINT}(value: {ANY}):
-    if isinstance(value, float) and value.is_integer():
+    if {IS_INSTANCE}(value, float) and value.is_integer():
         value = int(value)
-    if isinstance(value, str):
+    if {IS_INSTANCE}(value, str):
         value = "'" + value + "'"
-    if isinstance(value, list) and all(
-        isinstance(item, str) for item in value  # type: ignore [reportUnknownVariableType]
+    if {IS_INSTANCE}(value, list) and all(
+        {IS_INSTANCE}(item, str) for item in value  # type: ignore [reportUnknownVariableType]
     ):
         value = "".join(value)
     __builtins__.print(value, end="")
 """,
     "add": """
 def {ADD}(left: {ANY}, right: {ANY}) -> {ANY}:
-    left_is_list = isinstance(left, list)
-    right_is_list = isinstance(right, list)
+    left_is_list = {IS_INSTANCE}(left, list)
+    right_is_list = {IS_INSTANCE}(right, list)
     if left_is_list and right_is_list:
-        if len(left) == 0 or len(right) == 0 or type(left[0]) is type(right[0]):
+        if {LEN}(left) == 0 or {LEN}(right) == 0 or type(left[0]) is type(right[0]):
             return left + right  # type: ignore
         if type(right[0]) is str:
             return [str(left_val) for left_val in left] + right  # type: ignore
@@ -282,13 +288,13 @@ def {ADD}(left: {ANY}, right: {ANY}) -> {ANY}:
 
     if left_is_list and not right_is_list:
         t = type(left[0]) if left else None  # type: ignore
-        if t is not None and not isinstance(right, t):
+        if t is not None and not {IS_INSTANCE}(right, t):
             right = t(right)
         return left + [right]  # type: ignore
 
     if not left_is_list and right_is_list:
         t = type(right[0]) if right else None  # type: ignore
-        if t is not None and not isinstance(left, t):
+        if t is not None and not {IS_INSTANCE}(left, t):
             left = t(left)
         return [left] + right
 
@@ -316,13 +322,17 @@ def python_export(bytecode: Bytecode) -> str:
         "# pyright: reportPossiblyUnboundVariable=false",
         "# pyright: reportRedeclaration=false",
         f"from typing import Any as {var_names.ANY}",
-        "import copy",
+        f"import copy as {var_names.COPY}",
         "",
     ]
     if is_in("true", bytecode):
         lines.append("true: bool = True")
     if is_in("false", bytecode):
         lines.append("false: bool = False")
+    if is_in("len", bytecode):
+        lines.append(f"{var_names.LEN} = len")
+    if is_in("is_instance", bytecode):
+        lines.append(f"{var_names.IS_INSTANCE} = isinstance")
     lines.extend([
         f"{var_names.STACK}: list[{var_names.ANY}] = []",
         "",
@@ -361,7 +371,7 @@ def python_export(bytecode: Bytecode) -> str:
         lines.extend([
             line for lines in cast(list[list[str]], code_lines[:minimum]) for line in lines
         ])
-        lines.append(f"ip: int = {minimum}")
+        lines.append(f"{var_names.IP}: int = {minimum}")
         lines.append("while True:")
         count = 0
         for ind, line in enumerate(code_lines):
@@ -369,22 +379,22 @@ def python_export(bytecode: Bytecode) -> str:
                 continue
             if ind in usefull:
                 if ind != minimum and lines[-1].strip() != "continue":
-                    lines.append(f"        ip += {count}")
-                lines.append(f"    if ip == {ind}:")
+                    lines.append(f"        {var_names.IP} += {count}")
+                lines.append(f"    if {var_names.IP} == {ind}:")
                 count = 0
             count += 1
             if isinstance(line, Goto):
                 if line.condition is not None:
                     lines.append(f"        if {line.condition}:")
-                    lines.append(f"            ip = {line.line}")
+                    lines.append(f"            {var_names.IP} = {line.line}")
                     lines.append("            continue")
                 else:
-                    lines.append(f"        ip = {line.line}")
+                    lines.append(f"        {var_names.IP} = {line.line}")
                     lines.append("        continue")
             else:
                 lines.extend([f"        {line}" for line in line])
-        lines.append(f"        ip += {count}")
-        lines.append(f"    if ip > {ind}:")
+        lines.append(f"        {var_names.IP} += {count}")
+        lines.append(f"    if {var_names.IP} > {ind}:")
         lines.append("        break")
     else:
         lines.extend([line for _lines in cast(list[list[str]], code_lines) for line in _lines])
