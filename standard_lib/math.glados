@@ -1,0 +1,429 @@
+#-
+Mathematical functions and constants. Returns void if the input is invalid.
+Ordered by math.pyi from pylance 2026.2.1
+WARNING: This file needs length, max and toint to be defined or imported
+-#
+
+float e = 2.718281828459045
+float pi = 3.141592653589793
+float tau = 6.283185307179586
+
+fun abs(float x) float {
+    if (x < 0) {
+        return -x
+    } else {
+        return x
+    }
+}
+
+fun acos(float x) float {
+    return atan2(sqrt(1 - x * x), x)
+}
+
+fun acosh(float x) float {
+    return log(x + sqrt(x * x - 1), e)
+}
+
+fun asin(float x) float {
+    return atan2(x, sqrt(1 - x * x))
+}
+
+fun asinh(float x) float {
+    return log(x + sqrt(x * x + 1), e)
+}
+
+fun atan(float x) float {
+    return atan2(x, 1)
+}
+
+fun atan2(float y, float x) float {
+    if (x > 0) {
+        return atan(y / x)
+    } elif (x < 0 and y >= 0) {
+        return atan(y / x) + pi
+    } elif (x < 0 and y < 0) {
+        return atan(y / x) - pi
+    } elif (x == 0 and y > 0) {
+        return pi / 2
+    } elif (x == 0 and y < 0) {
+        return -pi / 2
+    } else {
+        return void
+    }
+}
+
+fun atanh(float x) float {
+    return 0.5 * log((1 + x) / (1 - x), e)
+}
+
+fun cbrt(float x) float {
+    if (x < 0) {
+        return -pow(-x, 1 / 3)
+    } else {
+        return pow(x, 1 / 3)
+    }
+}
+
+fun ceil(float x) int {
+    if (x > 0) {
+        return toint(x) + 1
+    } else {
+        return toint(x)
+    }
+}
+
+fun comb(int n, int k) int {
+    if (k < 0 or k > n) {
+        return 0
+    } else {
+        return factorial(n) / (factorial(k) * factorial(n - k))
+    }
+}
+
+fun copysign(float x, float y) float {
+    if (y >= 0) {
+        return abs(x)
+    } else {
+        return -abs(x)
+    }
+}
+
+fun cos(float x) float {
+    return sin(x + pi / 2)
+}
+
+fun cosh(float x) float {
+    return (exp(x) + exp(-x)) / 2
+}
+
+fun degrees(float x) float {
+    return x * 180 / pi
+}
+
+fun dist(float[0] xs, float[0] ys) float {
+    if (length(xs) != length(ys)) {
+        return void
+    }
+    float sum = 0
+    for (int i = 0) (i = i + 1) (i < length(xs)) {
+        sum = sum + ((xs[i] - ys[i]) * (xs[i] - ys[i]))
+    }
+    return sqrt(sum)
+}
+
+fun erf(float x) float {
+    float a1 = 0.254829592
+    float a2 = -0.284496736
+    float a3 = 1.421413741
+    float a4 = -1.453152027
+    float a5 = 1.061405429
+    float p = 0.3275911
+
+    int sign = 1
+    if (x < 0) {
+        sign = -1
+    }
+    x = abs(x)
+
+    float t = 1 / (1 + p * x)
+    float y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * exp(-x * x)
+
+    return sign * y
+}
+
+fun erfc(float x) float {
+    return 1 - erf(x)
+}
+
+fun exp(float x) float {
+    return pow(e, x)
+}
+
+fun exp2(float x) float {
+    return pow(2, x)
+}
+
+fun expm1(float x) float {
+    return exp(x) - 1
+}
+
+fun factorial(int n) int {
+    if (n < 0) {
+        return void
+    } elif (n == 0) {
+        return 1
+    } else {
+        int result = 1
+        for (int i = 1) (i = i + 1) (i <= n) {
+            result = result * i
+        }
+        return result
+    }
+}
+
+fun floor(float x) int {
+    if (x > 0) {
+        return toint(x)
+    } else {
+        return toint(x) - 1
+    }
+}
+
+## This function returns the mantissa and exponent of a float number.
+## The mantissa is a float number between 0.5 and 1, and the exponent is an integer.
+fun frexp(float x) float[2] {
+    if (x == 0) {
+        return [0, 0]
+    }
+    int exp = 0
+    while (abs(x) >= 1) {
+        x = x / 2
+        exp = exp + 1
+    }
+    while (abs(x) < 0.5) {
+        x = x * 2
+        exp = exp - 1
+    }
+    return [x, exp]
+}
+
+fun fsum(float[0] xs) float {
+    float sum = 0
+    for (int i = 0) (i = i + 1) (i < length(xs)) {
+        sum = sum + xs[i]
+    }
+    return sum
+}
+
+fun gamma(float x) float {
+    if (x <= 0) {
+        return void
+    }
+    float[6] p = [676.5203681218851, -1259.1392167224028, 771.3234287776535, -176.6150291498386, 12.507343278686905, -0.13857109526572012]
+    float[6] q = [1, 0.9999999999998099, 676.5203681218851, -1259.1392167224028, 771.3234287776535, -176.6150291498386]
+    float z = x + 5.5
+    float sum = 0
+    for (int i = 0) (i = i + 1) (i < length(p)) {
+        sum = sum + p[i] / (x + i)
+    }
+    return sqrt(2 * pi) * pow(z, x + 0.5) * exp(-z) * sum
+}
+
+fun gcd(int[0] nums) int {
+    if (length(nums) == 0) {
+        return void
+    }
+    int a = nums[0]
+    for (int i = 1) (i = i + 1) (i < length(nums)) {
+        int b = nums[i]
+        while (b != 0) {
+            int t = b
+            b = a % b
+            a = t
+        }
+    }
+    return a
+}
+
+fun hypot(float[0] coords) float {
+    float sum = 0
+    for (int i = 0) (i = i + 1) (i < length(coords)) {
+        sum = sum + coords[i] * coords[i]
+    }
+    return sqrt(sum)
+}
+
+fun isclose(float a, float b, float rel_tol, float abs_tol) bool {
+    return abs(a - b) <= max([rel_tol * max([abs(a), abs(b)]), abs_tol])
+}
+
+fun isqrt(int x) int {
+    if (x < 0) {
+        return void
+    }
+    int left = 0
+    int right = x
+    while (left <= right) {
+        int mid = (left + right) / 2
+        if (mid * mid == x) {
+            return mid
+        } elif (mid * mid < x) {
+            left = mid + 1
+        } else {
+            right = mid - 1
+        }
+    }
+    return right
+}
+
+fun lcm(int[0] nums) int {
+    if (length(nums) == 0) {
+        return void
+    }
+    int result = nums[0]
+    for (int i = 1) (i = i + 1) (i < length(nums)) {
+        int b = nums[i]
+        result = abs(result * b) / gcd([result, b])
+    }
+    return result
+}
+
+fun ldexp(float x, int i) float {
+    return x * pow(2, i)
+}
+
+fun lgamma(float x) float {
+    return log(abs(gamma(x)), e)
+}
+
+fun log(float x, float base) float {
+    if (x <= 0 or base <= 0 or base == 1) {
+        return void
+    }
+    return log2(x) / log2(base)
+}
+
+fun log10(float x) float {
+    if (x <= 0) {
+        return void
+    }
+    return log2(x) / log2(10)
+}
+
+fun log1p(float x) float {
+    if (x <= -1) {
+        return void
+    }
+    return log(1 + x, e)
+}
+
+fun log2(float x) float {
+    if (x <= 0) {
+        return void
+    }
+    float[2] parts = frexp(x)
+    float mantissa = parts[0]
+    int exponent = toint(parts[1])
+
+    float y = (mantissa - 1) / (mantissa + 1)
+    float y2 = y * y
+    float sum = 0
+    float term = y
+    for (int i = 1) (i = i + 2) (i <= 19) {
+        sum = sum + term / i
+        term = term * y2
+    }
+
+    return exponent + (2 * sum) / 0.6931471805599453
+}
+
+fun modf(float x) float[2] {
+    float intpart = toint(x)
+    float fracpart = x - intpart
+    return [fracpart, intpart]
+}
+
+fun nextafter(float x, float y) float {
+    if (x == y) {
+        return y
+    }
+    if (x < y) {
+        return x + 0.0000000001
+    } else {
+        return x - 0.0000000001
+    }
+}
+
+fun perm(int n, int k) int {
+    if (k < 0 or k > n) {
+        return 0
+    } else {
+        return factorial(n) / factorial(n - k)
+    }
+}
+
+fun pow(float x, float y) float {
+    if (x < 0) {
+        return void
+    }
+    return exp(y * log(x, e))
+}
+
+fun prod(float[0] xs) float {
+    float product = 1
+    for (int i = 0) (i = i + 1) (i < length(xs)) {
+        product = product * xs[i]
+    }
+    return product
+}
+
+fun radians(float x) float {
+    return x * pi / 180
+}
+
+fun remainder(float x, float y) float {
+    if (y == 0) {
+        return void
+    }
+    return x - y * toint(x / y)
+}
+
+fun sin(float x) float {
+    float term = x
+    float sum = 0
+    for (int i = 1) (i = i + 2) (i <= 19) {
+        sum = sum + term
+        term = -term * x * x / ((i + 1) * (i + 2))
+    }
+    return sum
+}
+
+fun sinh(float x) float {
+    return (exp(x) - exp(-x)) / 2
+}
+
+fun sumprod(float[0] xs, float[0] ys) float {
+    if (length(xs) != length(ys)) {
+        return void
+    }
+    float sum = 0
+    for (int i = 0) (i = i + 1) (i < length(xs)) {
+        sum = sum + xs[i] * ys[i]
+    }
+    return sum
+}
+
+fun sqrt(float x) float {
+    if (x < 0) {
+        return void
+    }
+    float guess = x / 2
+    for (int i = 0) (i = i + 1) (i < 10) {
+        guess = (guess + x / guess) / 2
+    }
+    return guess
+}
+
+fun tan(float x) float {
+    return sin(x) / cos(x)
+}
+
+fun tanh(float x) float {
+    return sinh(x) / cosh(x)
+}
+
+fun trunc(float x) int {
+    return toint(x)
+}
+
+fun ulp(float x) float {
+    if (x == 0) {
+        return 0.000000000000000000000000000000000000000000001401298464324817
+    }
+    float next = nextafter(x, x + 1)
+    return abs(next - x)
+}
+
+fun fma(float x, float y, float z) float {
+    return (x * y) + z
+}

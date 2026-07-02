@@ -1,0 +1,8 @@
+#-
+Converts from a type to another.
+-#
+
+## Convert float to int
+fun toint(float x) int {
+    return x - (x % 1)
+}

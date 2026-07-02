@@ -1,0 +1,32 @@
+#-
+Returns void if the input is invalid.
+WARNING: This file needs length to be defined or imported
+-#
+
+## Max of a list of numbers
+fun max(float[0] numbers) float {
+    if (length(numbers) == 0) {
+        return void
+    }
+    float max = numbers[0]
+    for (int i = 1) (i = i + 1) (i < length(numbers)) {
+        if (numbers[i] > max) {
+            max = numbers[i]
+        }
+    }
+    return max
+}
+
+## Min of a list of numbers
+fun min(float[0] numbers) float {
+    if (length(numbers) == 0) {
+        return void
+    }
+    float min = numbers[0]
+    for (int i = 1) (i = i + 1) (i < length(numbers)) {
+        if (numbers[i] < min) {
+            min = numbers[i]
+        }
+    }
+    return min
+}
