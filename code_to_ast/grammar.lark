@@ -85,7 +85,7 @@ type: base_type ("[" expr? "]")*                           -> type_parse
      | NAME -> var
      | array
      | "(" expr ")"
-     | VOID
+     | VOID -> void_value
 
 VOID: "void"
 
